@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Capex Dashboard v2 · 桑基图 + ROI 测算</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--p:#534AB7;--pl:#7B72D9;--pb:#F5F4FB;--a:#E63946;--g:#06A77D;--w:#FFA500;--t:#2C2A4A;--ts:#6B6789;--bd:#E0DFEC;--bg:#FAFAFB;--c:#FFF;--up:#E63946;--down:#06A77D;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--t);line-height:1.7;font-size:16px;}
+.tabbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);box-shadow:0 1px 12px rgba(0,0,0,.05);}
+.tabbar-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;padding:0 24px;height:56px;gap:24px;}
+.brand{font-weight:700;color:var(--p);font-size:16px;}
+.brand .ver{display:inline-block;background:var(--p);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:600;}
+.tabs{display:flex;flex:1;}
+.tab{padding:0 16px;height:56px;cursor:pointer;font-size:14px;color:var(--ts);border-bottom:3px solid transparent;display:flex;align-items:center;transition:all .2s;}
+.tab:hover{color:var(--p);}
+.tab.active{color:var(--p);border-bottom-color:var(--p);font-weight:600;}
+.right-link{font-size:13px;color:var(--ts);text-decoration:none;}
+.right-link:hover{color:var(--p);}
+.hero{max-width:1400px;margin:0 auto;padding:24px 32px 16px;}
+.hero-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:12px;}
+.hero-title{font-size:24px;color:var(--p);font-weight:700;}
+.hero-sub{font-size:14px;color:var(--ts);margin-top:4px;}
+.hero-meta{display:flex;gap:18px;font-size:13px;color:var(--ts);}
+.hero-meta b{color:var(--p);font-size:18px;font-weight:700;}
+.sankey-card{background:var(--c);border:1px solid var(--bd);border-radius:14px;padding:20px;box-shadow:0 4px 18px rgba(83,74,183,.06);}
+#sankey{width:100%;height:620px;}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--ts);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;}
+.kpi-band{max-width:1400px;margin:24px auto 0;padding:0 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+.kpi{background:var(--c);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;}
+.kpi .label{font-size:12px;color:var(--ts);margin-bottom:6px;}
+.kpi .value{font-size:24px;color:var(--p);font-weight:700;line-height:1.2;}
+.kpi .sub{font-size:12px;color:var(--ts);margin-top:4px;}
+.kpi.warn .value{color:var(--w);}.kpi.up .value{color:var(--up);}.kpi.down .value{color:var(--down);}
+.roi{max-width:1400px;margin:48px auto 0;padding:0 32px;}
+.section-title{font-size:22px;color:var(--p);font-weight:700;margin-bottom:6px;}
+.section-sub{font-size:14px;color:var(--ts);margin-bottom:20px;}
+.roi-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;}
+.sliders{background:var(--c);border:1px solid var(--bd);border-radius:14px;padding:22px;}
+.scenario-row{display:flex;gap:8px;margin-bottom:18px;}
+.scenario-btn{flex:1;padding:8px 0;font-size:13px;background:var(--pb);color:var(--p);border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-weight:500;}
+.scenario-btn:hover{background:var(--p);color:#fff;}
+.scenario-btn.active{background:var(--p);color:#fff;border-color:var(--p);}
+.slider-row{margin-bottom:14px;}
+.slider-row .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--t);margin-bottom:6px;}
+.slider-row .lab b{color:var(--p);font-weight:700;font-size:14px;}
+.slider-row input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;background:var(--pb);border-radius:3px;outline:none;}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--p);border-radius:50%;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 6px rgba(83,74,183,.35);}
+.slider-row .hint{font-size:11px;color:var(--ts);margin-top:2px;}
+.results-pane{display:flex;flex-direction:column;gap:18px;}
+.results-kpi{background:var(--c);border:1px solid var(--bd);border-radius:14px;padding:22px;}
+.results-kpi .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.metric{text-align:center;padding:14px 8px;background:var(--pb);border-radius:10px;}
+.metric .v{font-size:26px;font-weight:700;color:var(--p);line-height:1.1;}
+.metric .v.bad{color:var(--up);}.metric .v.good{color:var(--down);}
+.metric .l{font-size:12px;color:var(--ts);margin-top:6px;}
+.results-chart-card{background:var(--c);border:1px solid var(--bd);border-radius:14px;padding:18px;}
+#cashflow-chart{width:100%;height:300px;}
+#sensitivity-chart{width:100%;height:280px;}
+.charts-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.charts-2 .results-chart-card h4{font-size:14px;color:var(--p);font-weight:600;margin-bottom:8px;}
+.notes{max-width:1400px;margin:36px auto 0;padding:0 32px;}
+.notes h3{font-size:18px;color:var(--p);margin-bottom:10px;}
+.notes ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.notes li{background:var(--c);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;font-size:14px;color:var(--t);}
+.notes li b{color:var(--p);}
+.footer{max-width:1400px;margin:48px auto 0;padding:24px 32px 48px;border-top:1px solid var(--bd);text-align:center;font-size:13px;color:var(--ts);}
+.footer a{color:var(--p);text-decoration:none;}
+@media (max-width:1100px){.roi-grid{grid-template-columns:1fr;}.charts-2{grid-template-columns:1fr;}.notes ul{grid-template-columns:1fr;}#sankey{height:500px;}}
+</style>
+</head>
+<body>
+
+<nav class="tabbar"><div class="tabbar-inner">
+  <div class="brand">AI Capex Dashboard <span class="ver">v2.0</span></div>
+  <div class="tabs">
+    <div class="tab active" data-target="hero">资金桑基图</div>
+    <div class="tab" data-target="kpi">关键 KPI</div>
+    <div class="tab" data-target="roi">ROI 滑块</div>
+    <div class="tab" data-target="notes">注解 & 警戒</div>
+  </div>
+  <a class="right-link" href="./index.html" target="_blank">📖 完整报告 v1.1 →</a>
+</div></nav>
+
+<section class="hero" id="hero">
+  <div class="hero-head">
+    <div>
+      <div class="hero-title">🌊 全球 AI Capex 资金流动桑基图（2026E）</div>
+      <div class="hero-sub">从云厂资金源头 → IT 设备 → AI 服务器 BoM → 代工封装 → WFE 设备终极沉淀（单位：亿美元）</div>
+    </div>
+    <div class="hero-meta">
+      <div>全行业总盘 <b>$1.03 万亿</b></div>
+      <div>9 大 CSP <b>$8,300 亿</b></div>
+      <div>AI 服务器 <b>$4,360 亿</b></div>
+    </div>
+  </div>
+  <div class="sankey-card">
+    <div id="sankey"></div>
+    <div class="legend">
+      <span><i style="background:#534AB7"></i>云厂商资金源头</span>
+      <span><i style="background:#A32D2D"></i>Neocloud / 主权 AI</span>
+      <span><i style="background:#854F0B"></i>中国云厂</span>
+      <span><i style="background:#185FA5"></i>IT 设备 / AI 服务器</span>
+      <span><i style="background:#1D9E75"></i>BoM 组件</span>
+      <span><i style="background:#3B6D11"></i>WFE 设备终极沉淀</span>
+      <span style="margin-left:auto;color:#888;">悬停高亮路径</span>
+    </div>
+  </div>
+</section>
+
+<section class="kpi-band" id="kpi">
+  <div class="kpi"><div class="label">9 大 CSP Capex 2026E</div><div class="value">$8,300亿</div><div class="sub">YoY +50% (vs 2025)</div></div>
+  <div class="kpi up"><div class="label">AI 服务器 BoM</div><div class="value">$4,360亿</div><div class="sub">占 IT 设备 75%</div></div>
+  <div class="kpi"><div class="label">GPU + ASIC</div><div class="value">$2,400亿</div><div class="sub">BoM 占比 55%</div></div>
+  <div class="kpi up"><div class="label">HBM TAM</div><div class="value">$700亿</div><div class="sub">YoY +200%</div></div>
+  <div class="kpi"><div class="label">WFE 设备市场</div><div class="value">$1,400亿</div><div class="sub">ASML / AMAT / LAM / KLA / TEL</div></div>
+  <div class="kpi warn"><div class="label">FCF 警戒</div><div class="value">⚠ 2 家</div><div class="sub">Oracle / Amazon FCF 转负</div></div>
+</section>
+
+<section class="roi" id="roi">
+  <div class="section-title">🎛️ 单 GW AI 算力投资 ROI 测算（交互式）</div>
+  <div class="section-sub">滑动参数即时看 IRR / 回收期 / NPV 变化。Neocloud 模式参考（含财务杠杆）。</div>
+  <div class="roi-grid">
+    <div class="sliders">
+      <div class="scenario-row">
+        <button class="scenario-btn" data-sc="bear">悲观</button>
+        <button class="scenario-btn active" data-sc="base">基准</button>
+        <button class="scenario-btn" data-sc="bull">乐观</button>
+      </div>
+      <div class="slider-row"><div class="lab"><span>GPU 单价</span><b id="v-gpu">$30,000</b></div><input type="range" id="r-gpu" min="20000" max="50000" step="500" value="30000"><div class="hint">H200 / B200 / GB200 跨代价格区间</div></div>
+      <div class="slider-row"><div class="lab"><span>GPU 数量（颗 / GW）</span><b id="v-num">250,000</b></div><input type="range" id="r-num" min="150000" max="400000" step="10000" value="250000"><div class="hint">1 GW 算力规模典型配置</div></div>
+      <div class="slider-row"><div class="lab"><span>租金（$/GPU·月）</span><b id="v-rent">$4,500</b></div><input type="range" id="r-rent" min="2000" max="8000" step="100" value="4500"><div class="hint">CoreWeave / 主权 AI 长约报价</div></div>
+      <div class="slider-row"><div class="lab"><span>利用率</span><b id="v-util">75%</b></div><input type="range" id="r-util" min="40" max="95" step="1" value="75"><div class="hint">高利用率 = 长约客户绑定</div></div>
+      <div class="slider-row"><div class="lab"><span>电费 ($/kWh)</span><b id="v-elec">$0.08</b></div><input type="range" id="r-elec" min="0.05" max="0.20" step="0.005" value="0.08"><div class="hint">PUE 1.25 假设</div></div>
+      <div class="slider-row"><div class="lab"><span>折旧年限</span><b id="v-dep">4 年</b></div><input type="range" id="r-dep" min="3" max="6" step="1" value="4"><div class="hint">行业主流 4–5 年</div></div>
+      <div class="slider-row"><div class="lab"><span>财务杠杆</span><b id="v-lev">65%</b></div><input type="range" id="r-lev" min="0" max="80" step="5" value="65"><div class="hint">CoreWeave ~70%</div></div>
+      <div class="slider-row"><div class="lab"><span>债务利率</span><b id="v-rate">8.5%</b></div><input type="range" id="r-rate" min="3" max="15" step="0.25" value="8.5"><div class="hint">私募信贷 + 资产抵押</div></div>
+    </div>
+    <div class="results-pane">
+      <div class="results-kpi"><div class="row">
+        <div class="metric"><div class="v" id="m-irr">-</div><div class="l">IRR</div></div>
+        <div class="metric"><div class="v" id="m-payback">-</div><div class="l">静态回收期</div></div>
+        <div class="metric"><div class="v" id="m-npv">-</div><div class="l">NPV (10%)</div></div>
+        <div class="metric"><div class="v" id="m-capex">-</div><div class="l">Capex 总投入</div></div>
+      </div></div>
+      <div class="charts-2">
+        <div class="results-chart-card"><h4>累计现金流曲线</h4><div id="cashflow-chart"></div></div>
+        <div class="results-chart-card"><h4>敏感性热力图（IRR 对 GPU 单价 × 利用率）</h4><div id="sensitivity-chart"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="notes" id="notes">
+  <h3>📌 关键注解 & 周期顶点警戒</h3>
+  <ul>
+    <li><b>桑基图守恒律</b>：本图严格遵守"流出 ≤ 流入"，CSP 资金源头 ≈ TrendForce $8,300 亿口径</li>
+    <li><b>HBM4 base die 外包 TSMC</b>：SK 海力士 HBM4 决定将 base die 外包给 TSMC，关键产业链拐点</li>
+    <li><b>FCF 警戒 ⚠</b>：Oracle / Amazon 因 capex 激进首次出现 FCF 转负，需密切跟踪</li>
+    <li><b>Neocloud 脆弱性</b>：高杠杆 + 短摊销 + 客户集中三件套，对 GPU 单价 / 租金双向敏感</li>
+    <li><b>反身性</b>：AI 应用变现 vs Capex 是同一只脚两面 — 见 S10_应用变现框架.md</li>
+    <li><b>受益梯队映射</b>：与 SemiTracker 30 股池对应表 — 见 S09_受益梯队映射.md</li>
+  </ul>
+</section>
+
+<div class="footer">
+  AI Capex Dashboard v2.0 · 2026-05-27 · Anson Research<br>
+  数据来源：公司一手财报 / NeoData / TrendForce / Counterpoint / SemiAnalysis<br>
+  <a href="./index.html">完整报告 v1.1（FINAL_REPORT）</a> · 仅供研究参考，不构成投资建议
+</div>
+
+<script>
+// ============ Sankey 数据 ============
+const sankeyData = {
+  nodes:[
+    {name:"美系5大CSP",itemStyle:{color:"#534AB7"}},
+    {name:"中国云厂",itemStyle:{color:"#854F0B"}},
+    {name:"Neocloud+主权AI",itemStyle:{color:"#A32D2D"}},
+    {name:"IT设备",itemStyle:{color:"#185FA5"}},
+    {name:"网络设备",itemStyle:{color:"#7B72D9"}},
+    {name:"AI服务器",itemStyle:{color:"#185FA5"}},
+    {name:"GPU+ASIC",itemStyle:{color:"#1D9E75"}},
+    {name:"HBM",itemStyle:{color:"#1D9E75"}},
+    {name:"DDR5/NAND",itemStyle:{color:"#1D9E75"}},
+    {name:"CoWoS",itemStyle:{color:"#1D9E75"}},
+    {name:"ODM/PCB/散热",itemStyle:{color:"#1D9E75"}},
+    {name:"代工厂(TSMC等)",itemStyle:{color:"#888780"}},
+    {name:"WFE设备",itemStyle:{color:"#3B6D11"}},
+    {name:"HBM专用设备",itemStyle:{color:"#3B6D11"}},
+  ],
+  links:[
+    {source:"美系5大CSP",target:"IT设备",value:5320},
+    {source:"中国云厂",target:"IT设备",value:486},
+    {source:"Neocloud+主权AI",target:"IT设备",value:1408},
+    {source:"IT设备",target:"AI服务器",value:4360},
+    {source:"IT设备",target:"网络设备",value:1452},
+    {source:"AI服务器",target:"GPU+ASIC",value:2400},
+    {source:"AI服务器",target:"HBM",value:520},
+    {source:"AI服务器",target:"DDR5/NAND",value:260},
+    {source:"AI服务器",target:"CoWoS",value:130},
+    {source:"AI服务器",target:"ODM/PCB/散热",value:790},
+    {source:"GPU+ASIC",target:"代工厂(TSMC等)",value:1080},
+    {source:"HBM",target:"HBM专用设备",value:80},
+    {source:"CoWoS",target:"代工厂(TSMC等)",value:130},
+    {source:"代工厂(TSMC等)",target:"WFE设备",value:1285},
+  ]
+};
+
+const sankey = echarts.init(document.getElementById('sankey'));
+sankey.setOption({
+  tooltip:{trigger:'item',triggerOn:'mousemove',formatter:p=>{
+    if(p.dataType==='node') return '<b>'+p.name+'</b>';
+    return '<b>'+p.data.source+' → '+p.data.target+'</b><br/>$'+p.data.value.toLocaleString()+' 亿';
+  }},
+  series:[{
+    type:'sankey',left:20,right:140,top:20,bottom:20,
+    data:sankeyData.nodes,links:sankeyData.links,
+    nodeAlign:'left',nodeWidth:18,nodeGap:10,
+    lineStyle:{color:'gradient',curveness:0.55,opacity:0.55},
+    label:{fontSize:13,fontFamily:'system-ui',fontWeight:500,color:'#2C2A4A',formatter:p=>{
+      const inSum=sankeyData.links.filter(l=>l.target===p.name).reduce((s,l)=>s+l.value,0);
+      const outSum=sankeyData.links.filter(l=>l.source===p.name).reduce((s,l)=>s+l.value,0);
+      const v=Math.max(inSum,outSum);
+      return p.name+'\n$'+v.toLocaleString()+'亿';
+    }},
+    emphasis:{focus:'adjacency',lineStyle:{opacity:0.85}},
+  }]
+});
+
+// ============ ROI 模型 ============
+const PUE=1.25, HOURS_PER_YEAR=8760, GPU_TDP_KW=1.2, DISCOUNT=0.10;
+const SCENARIOS = {
+  bear:{gpu:25000,num:200000,rent:3000,util:60,elec:0.12,dep:4,lev:70,rate:11},
+  base:{gpu:30000,num:250000,rent:4500,util:75,elec:0.08,dep:4,lev:65,rate:8.5},
+  bull:{gpu:35000,num:300000,rent:6000,util:88,elec:0.07,dep:5,lev:60,rate:6.5}
+};
+
+function getParams(){
+  return {
+    gpu:+document.getElementById('r-gpu').value,
+    num:+document.getElementById('r-num').value,
+    rent:+document.getElementById('r-rent').value,
+    util:+document.getElementById('r-util').value,
+    elec:+document.getElementById('r-elec').value,
+    dep:+document.getElementById('r-dep').value,
+    lev:+document.getElementById('r-lev').value,
+    rate:+document.getElementById('r-rate').value,
+  };
+}
+
+function calcROI(p){
+  // 简化模型：BoM 反推 GPU+服务器/HBM/CoWoS/ODM ≈ GPU 单价 × 1.85
+  const totalCapexUnit = p.gpu * 1.85;
+  const totalCapex = totalCapexUnit * p.num;
+  const annualRevenue = p.num * p.rent * 12 * (p.util/100);
+  const annualElec = p.num * GPU_TDP_KW * PUE * HOURS_PER_YEAR * (p.util/100) * p.elec;
+  const annualDep = totalCapex / p.dep;
+  const debt = totalCapex * (p.lev/100);
+  const annualInterest = debt * (p.rate/100);
+  const annualOpEx = annualRevenue * 0.08;  // 简化：人工/维护占收入8%
+  const equity = totalCapex - debt;
+  // 年度净现金流（口径：EBITDA 减利息）
+  const annualEBITDA = annualRevenue - annualElec - annualOpEx;
+  const annualCashFlow = annualEBITDA - annualInterest;
+  // IRR：基于 dep 年期的现金流序列（期末残值=0，简化）
+  // 期初 -equity，年度 +annualCashFlow（共 dep 年）
+  const cashflows = [-equity];
+  for(let i=0;i<p.dep;i++) cashflows.push(annualCashFlow);
+  const irr = computeIRR(cashflows);
+  const payback = annualCashFlow > 0 ? equity / annualCashFlow : Infinity;
+  const npv = computeNPV(cashflows, DISCOUNT);
+  return {
+    totalCapex, equity, debt,
+    annualRevenue, annualElec, annualDep, annualInterest, annualEBITDA, annualCashFlow,
+    irr, payback, npv, cashflows
+  };
+}
+
+function computeIRR(cf){
+  let lo=-0.99,hi=2,r=0.1;
+  for(let i=0;i<100;i++){
+    r=(lo+hi)/2;
+    const v=cf.reduce((s,c,t)=>s+c/Math.pow(1+r,t),0);
+    if(v>0) lo=r; else hi=r;
+    if(Math.abs(v)<1) break;
+  }
+  return r;
+}
+function computeNPV(cf,r){return cf.reduce((s,c,t)=>s+c/Math.pow(1+r,t),0);}
+
+function fmtMoney(v){
+  if(Math.abs(v)>=1e9) return '$'+(v/1e9).toFixed(2)+'B';
+  if(Math.abs(v)>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(Math.abs(v)>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+
+const cashflowChart = echarts.init(document.getElementById('cashflow-chart'));
+const sensitivityChart = echarts.init(document.getElementById('sensitivity-chart'));
+
+function update(){
+  const p = getParams();
+  // 更新滑块标签
+  document.getElementById('v-gpu').textContent = '$'+p.gpu.toLocaleString();
+  document.getElementById('v-num').textContent = p.num.toLocaleString();
+  document.getElementById('v-rent').textContent = '$'+p.rent.toLocaleString();
+  document.getElementById('v-util').textContent = p.util+'%';
+  document.getElementById('v-elec').textContent = '$'+p.elec.toFixed(3);
+  document.getElementById('v-dep').textContent = p.dep+' 年';
+  document.getElementById('v-lev').textContent = p.lev+'%';
+  document.getElementById('v-rate').textContent = p.rate.toFixed(2)+'%';
+
+  const r = calcROI(p);
+  // KPI
+  const irrEl = document.getElementById('m-irr');
+  irrEl.textContent = (r.irr*100).toFixed(1)+'%';
+  irrEl.className = 'v ' + (r.irr<0?'bad':r.irr>0.20?'good':'');
+  const pbEl = document.getElementById('m-payback');
+  pbEl.textContent = isFinite(r.payback) ? r.payback.toFixed(1)+' 年' : '∞';
+  pbEl.className = 'v ' + (r.payback>p.dep?'bad':'good');
+  const npvEl = document.getElementById('m-npv');
+  npvEl.textContent = fmtMoney(r.npv);
+  npvEl.className = 'v ' + (r.npv<0?'bad':'good');
+  document.getElementById('m-capex').textContent = fmtMoney(r.totalCapex);
+
+  // 累计现金流曲线
+  let cumulative = [-r.equity];
+  for(let i=1;i<r.cashflows.length;i++) cumulative.push(cumulative[i-1]+r.cashflows[i]);
+  const xs = cumulative.map((_,i)=>'Y'+i);
+  cashflowChart.setOption({
+    grid:{left:60,right:30,top:20,bottom:30},
+    xAxis:{type:'category',data:xs,axisLine:{lineStyle:{color:'#bbb'}}},
+    yAxis:{type:'value',axisLine:{lineStyle:{color:'#bbb'}},splitLine:{lineStyle:{color:'#eee'}},axisLabel:{formatter:v=>fmtMoney(v)}},
+    series:[{
+      type:'line',data:cumulative,smooth:true,
+      lineStyle:{color:'#534AB7',width:2.5},
+      itemStyle:{color:'#534AB7'},
+      areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(83,74,183,0.35)'},{offset:1,color:'rgba(83,74,183,0.02)'}]}},
+      markLine:{symbol:'none',lineStyle:{color:'#888',type:'dashed'},data:[{yAxis:0,label:{formatter:'盈亏平衡'}}]}
+    }],
+    tooltip:{trigger:'axis',formatter:p=>p[0].name+'<br/>累计现金流: '+fmtMoney(p[0].value)}
+  });
+
+  // 敏感性热力图
+  const gpus = [20000,25000,30000,35000,40000,45000,50000];
+  const utils = [50,60,70,80,90];
+  const data = [];
+  let zMin=1, zMax=-1;
+  for(let i=0;i<gpus.length;i++) for(let j=0;j<utils.length;j++){
+    const pp = {...p, gpu:gpus[i], util:utils[j]};
+    const rr = calcROI(pp);
+    data.push([i,j,Math.max(-1,Math.min(2,rr.irr))]);
+    if(rr.irr<zMin) zMin=rr.irr;
+    if(rr.irr>zMax) zMax=rr.irr;
+  }
+  sensitivityChart.setOption({
+    tooltip:{position:'top',formatter:d=>'GPU $'+gpus[d.value[0]]/1000+'K · 利用率 '+utils[d.value[1]]+'%<br/>IRR <b>'+(d.value[2]*100).toFixed(1)+'%</b>'},
+    grid:{left:60,right:60,top:20,bottom:50},
+    xAxis:{type:'category',data:gpus.map(g=>'$'+g/1000+'K'),splitArea:{show:true},axisLabel:{fontSize:11}},
+    yAxis:{type:'category',data:utils.map(u=>u+'%'),splitArea:{show:true},axisLabel:{fontSize:11}},
+    visualMap:{min:-0.5,max:1,calculable:true,orient:'horizontal',left:'center',bottom:5,inRange:{color:['#E63946','#FFA500','#FFEB3B','#06A77D']},text:['高 IRR','低 / 负']},
+    series:[{type:'heatmap',data:data,label:{show:true,fontSize:10,formatter:d=>(d.value[2]*100).toFixed(0)+'%'},emphasis:{itemStyle:{shadowBlur:10}}}]
+  });
+}
+
+// 滑块监听
+document.querySelectorAll('input[type=range]').forEach(el=>el.addEventListener('input',update));
+
+// 场景按钮
+document.querySelectorAll('.scenario-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.scenario-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const sc = SCENARIOS[btn.dataset.sc];
+    if(!sc) return;
+    document.getElementById('r-gpu').value = sc.gpu;
+    document.getElementById('r-num').value = sc.num;
+    document.getElementById('r-rent').value = sc.rent;
+    document.getElementById('r-util').value = sc.util;
+    document.getElementById('r-elec').value = sc.elec;
+    document.getElementById('r-dep').value = sc.dep;
+    document.getElementById('r-lev').value = sc.lev;
+    document.getElementById('r-rate').value = sc.rate;
+    update();
+  });
+});
+
+// 顶部 Tab 滚动跳转
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    t.classList.add('active');
+    const el = document.getElementById(t.dataset.target);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+
+window.addEventListener('resize',()=>{sankey.resize();cashflowChart.resize();sensitivityChart.resize();});
+
+update();  // 首次渲染
+</script>
+</body>
+</html>
