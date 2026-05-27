@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 产业链 Capex 全景研究</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+<style>
+:root{--p:#534AB7;--pl:#7B72D9;--pb:#F5F4FB;--a:#E63946;--g:#06A77D;--t:#2C2A4A;--ts:#6B6789;--bd:#E0DFEC;--bg:#FAFAFB;--c:#FFF;--w:#FFA500;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--t);line-height:1.75;font-size:16px;}
+
+/* ===== 顶部 Tab 主导航（章级跳转，唯一全局导航）===== */
+.tabbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);box-shadow:0 1px 12px rgba(0,0,0,.05);}
+.tabbar-inner{max-width:1280px;margin:0 auto;display:flex;gap:0;overflow-x:auto;padding:0 24px;scrollbar-width:thin;}
+.tab{padding:14px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--ts);white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;flex-shrink:0;display:flex;align-items:center;gap:6px;}
+.tab:hover{color:var(--p);background:linear-gradient(180deg,transparent,var(--pb));}
+.tab.active{color:var(--p);border-bottom-color:var(--p);font-weight:600;background:linear-gradient(180deg,transparent,var(--pb));}
+.tab .num{display:inline-block;background:var(--pb);color:var(--p);font-size:11px;width:18px;height:18px;line-height:18px;text-align:center;border-radius:4px;font-weight:600;}
+.tab.active .num{background:var(--p);color:#fff;}
+
+/* ===== 主内容区（更宽，无侧边栏）===== */
+.main{max-width:1080px;margin:0 auto;padding:24px 32px 80px;}
+.header{background:linear-gradient(135deg,var(--p) 0%,var(--pl) 100%);color:#fff;padding:36px 32px;border-radius:16px;margin-bottom:28px;box-shadow:0 6px 20px rgba(83,74,183,.18);}
+.header h1{font-size:30px;margin-bottom:10px;font-weight:700;}
+.header .subtitle{font-size:16px;opacity:.92;margin-bottom:16px;line-height:1.6;}
+.header .meta{display:flex;gap:24px;flex-wrap:wrap;font-size:13px;opacity:.85;}
+
+/* ===== 正文 markdown 样式 ===== */
+.content h1{font-size:30px;color:var(--p);margin:48px 0 18px;font-weight:700;border-bottom:3px solid var(--p);padding-bottom:10px;scroll-margin-top:70px;}
+.content h2{font-size:25px;color:var(--p);margin:40px 0 16px;font-weight:700;border-bottom:2px solid var(--pb);padding-bottom:10px;scroll-margin-top:70px;}
+.content h3{font-size:20px;color:var(--t);margin:28px 0 12px;font-weight:600;scroll-margin-top:70px;border-left:4px solid var(--p);padding-left:12px;}
+.content h4{font-size:17px;color:var(--p);margin:22px 0 10px;font-weight:600;}
+.content p{margin-bottom:14px;font-size:16px;line-height:1.85;}
+.content ul,.content ol{margin:10px 0 18px 28px;}
+.content li{margin-bottom:8px;line-height:1.8;}
+.content blockquote{background:linear-gradient(135deg,#FAF9FC 0%,#F0EEF8 100%);border-left:4px solid var(--p);padding:16px 22px;margin:18px 0;border-radius:8px;color:var(--t);}
+.content blockquote p{margin:0;}
+.content code{background:var(--pb);color:var(--p);padding:2px 8px;border-radius:4px;font-size:14px;font-family:"SF Mono","Monaco",monospace;}
+.content pre{background:#F8F7FB;border:1px solid var(--bd);border-radius:8px;padding:14px;overflow-x:auto;margin:14px 0;}
+.content pre code{background:none;padding:0;font-size:13px;color:var(--t);line-height:1.6;}
+.content table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:var(--c);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05);}
+.content th,.content td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--bd);}
+.content th{background:var(--pb);color:var(--p);font-weight:600;font-size:13px;white-space:nowrap;}
+.content tr:hover td{background:#FAFAFC;}
+.content strong{color:var(--p);font-weight:600;}
+.content hr{border:none;border-top:2px dashed var(--bd);margin:40px 0;}
+
+/* ===== 图表卡片 ===== */
+.chart-card{background:var(--c);border:1px solid var(--bd);border-radius:12px;padding:22px;margin:24px 0;box-shadow:0 2px 12px rgba(0,0,0,.04);}
+.chart-card h4{color:var(--p);font-size:16px;margin-bottom:14px;font-weight:600;}
+.chart{width:100%;height:420px;}
+.chart-large{height:540px;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+
+/* ===== 章内子节小目录（h3 跳转，悬浮在章节顶部内嵌区）===== */
+.chapter-subnav{position:sticky;top:54px;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;margin:16px 0 24px;display:none;align-items:center;gap:14px;flex-wrap:wrap;font-size:13px;}
+.chapter-subnav.show{display:flex;animation:fadeIn .3s;}
+.chapter-subnav .label{color:var(--ts);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+.chapter-subnav a{color:var(--ts);text-decoration:none;padding:5px 10px;border-radius:5px;transition:all .15s;}
+.chapter-subnav a:hover{background:var(--pb);color:var(--p);}
+.chapter-subnav a.active{background:var(--p);color:#fff;font-weight:500;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===== 浮动「返回顶部」按钮 ===== */
+.back-top{position:fixed;bottom:32px;right:32px;width:48px;height:48px;background:var(--p);color:#fff;border:none;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(83,74,183,.35);opacity:0;pointer-events:none;transition:all .25s;z-index:90;}
+.back-top.show{opacity:1;pointer-events:auto;}
+.back-top:hover{background:var(--pl);transform:translateY(-2px);box-shadow:0 6px 20px rgba(83,74,183,.45);}
+
+/* ===== 阅读进度条（顶部细线）===== */
+.progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--p),var(--pl));width:0;z-index:101;transition:width .1s;}
+
+/* ===== 页脚 ===== */
+.footer{text-align:center;padding:32px;color:var(--ts);font-size:14px;border-top:1px solid var(--bd);margin-top:48px;}
+
+/* ===== 响应式 ===== */
+@media (max-width:900px){
+  .row-2{grid-template-columns:1fr;}
+  .main{padding:16px 16px 80px;}
+  .tab{padding:12px 12px;font-size:13px;}
+  .header{padding:24px 20px;}
+  .header h1{font-size:24px;}
+  .back-top{bottom:20px;right:20px;width:42px;height:42px;}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<nav class="tabbar">
+<div class="tabbar-inner" id="tabbar">
+<div class="tab active" data-target="执行摘要"><span class="num">0</span>总览</div>
+<div class="tab" data-target="第一章"><span class="num">1</span>Hyperscaler</div>
+<div class="tab" data-target="第二章"><span class="num">2</span>IDC 电力</div>
+<div class="tab" data-target="第三章"><span class="num">3</span>服务器 ODM</div>
+<div class="tab" data-target="第四章"><span class="num">4</span>核心组件</div>
+<div class="tab" data-target="第五章"><span class="num">5</span>代工封装</div>
+<div class="tab" data-target="第六章"><span class="num">6</span>设备材料</div>
+<div class="tab" data-target="第七章"><span class="num">7</span>资金传导</div>
+<div class="tab" data-target="第八章"><span class="num">8</span>趋势风险</div>
+<div class="tab" data-target="第十章"><span class="num">9</span>投资视角</div>
+<div class="tab" data-target="第十二章"><span class="num">10</span>事件日历</div>
+<div class="tab" data-target="第十三章"><span class="num">11</span>ROI 测算</div>
+<div class="tab" data-target="第十四章"><span class="num">12</span>分析师视角</div>
+</div>
+</nav>
+<main class="main">
+<div class="header">
+<h1>🌐 AI 产业链 Capex 全景研究</h1>
+<div class="subtitle">从云厂 → 服务器 → GPU / HBM / 光模块 / CoWoS → 设备材料的全产业链资金分布、流向与趋势</div>
+<div class="meta">
+<span>📅 v1.14 · 2026-05-23（博通深度 + HBM4-TSMC 关系融合）</span>
+<span>📊 时间窗口：2024 / 2025A / 2026E / 2027E / 2028E</span>
+<span>💰 1USD = 7.20 RMB / 1380 KRW / 31 NTD</span>
+</div>
+</div>
+<div class="chapter-subnav" id="chapter-subnav">
+<span class="label">本章子节</span>
+<div id="subnav-links" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+</div>
+<div class="content" id="content"></div>
+<div class="footer">
+<div>📊 AI 产业链 Capex 全景研究 · v1.9</div>
+<div style="margin-top:6px;">数据来源：公司一手财报 / NeoData / TrendForce / UBS / Goldman Sachs / Counterpoint / SemiAnalysis</div>
+<div style="margin-top:6px;">© 2026 Anson Liang × WorkBuddy · 仅供研究参考，不构成投资建议</div>
+</div>
+</main>
+<button class="back-top" id="backTop" title="返回顶部">↑</button>
+<script src="report_v2.js"></script>
+</body>
+</html>
